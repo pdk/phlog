@@ -1,0 +1,2 @@
+# phlog
+photo/blog server
