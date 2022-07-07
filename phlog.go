@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"flag"
+	"html/template"
 	"io"
 	"log"
 	"net/http"
@@ -19,7 +20,18 @@ var (
 		goldmark.WithExtensions(extension.Linkify),
 		goldmark.WithRendererOptions(
 			html.WithUnsafe()))
+
+	basicTemplate *template.Template
 )
+
+func init() {
+	t, err := template.ParseFiles("templates/basic.html")
+	if err != nil {
+		log.Fatalf("failed to parse template basic.html: %v", err)
+	}
+
+	basicTemplate = t
+}
 
 type ServerConfig struct {
 	RootPath   string
@@ -83,7 +95,16 @@ func (mds *MarkdownServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write(buf.Bytes())
+	data := map[string]any{
+		"Title":   "sample document",
+		"Content": template.HTML(buf.String()),
+	}
+
+	err = basicTemplate.Execute(w, data)
+	if err != nil {
+		log.Printf("failed to execute basicTemplat: %v", err)
+	}
+	// w.Write(buf.Bytes())
 }
 
 func (mds *MarkdownServer) tryFileAndIndexMD(urlPath string) (http.File, bool) {
