@@ -10,6 +10,15 @@ import (
 	"strings"
 
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/renderer/html"
+)
+
+var (
+	mdProcessor = goldmark.New(
+		goldmark.WithExtensions(extension.Linkify),
+		goldmark.WithRendererOptions(
+			html.WithUnsafe()))
 )
 
 type ServerConfig struct {
@@ -60,8 +69,6 @@ func (mds *MarkdownServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	defer f.Close()
 
-	log.Printf("reading markdown file %v", f)
-
 	source, err := io.ReadAll(f)
 	if err != nil {
 		log.Printf("failed to read already opened markdown %s: %v", urlPath, err)
@@ -70,7 +77,7 @@ func (mds *MarkdownServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var buf bytes.Buffer
-	if err := goldmark.Convert(source, &buf); err != nil {
+	if err := mdProcessor.Convert(source, &buf); err != nil {
 		log.Printf("failed to convert markdown: %v", err)
 		mds.fileServer.ServeHTTP(w, r)
 		return
